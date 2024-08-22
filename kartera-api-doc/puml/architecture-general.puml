@@ -1,0 +1,27 @@
+@startuml
+
+frame "Owner's system responsibility" {
+actor "product user 1" as pu1
+actor "product user 2" as pu2
+actor "product user N" as puN
+actor "partner" as partner
+}
+
+frame "Kartera responsibility" {
+node "Kartera API" as  kartera
+node "External financial service X" as  exSystem1
+node "Verification service Y" as  exSystem2
+node "External financial service X" as  exSystem3
+}
+
+
+pu1-->kartera : uses services
+pu2-->kartera : uses services
+puN-->kartera : uses services
+partner -->kartera : uses services/creates products
+
+kartera --> kartera : uses it's own functionality
+kartera --> exSystem1 : uses 3rd party's services
+kartera --> exSystem2 : uses 3rd party's services
+kartera --> exSystem3 : uses 3rd party's services
+@enduml

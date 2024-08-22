@@ -1,0 +1,12 @@
+site_name: Kartera API Documentation
+nav:
+  - Home: index.md
+  - Open API: open-api.md
+  - General concepts: general-concepts.md
+  - Architecture: architecture.md
+  - Basic Operation Flows: basic-operation-flows.md
+theme: readthedocs
+plugins:
+  - search
+  - print-site
+  - neoteroi.mkdocsoad
