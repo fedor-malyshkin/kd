@@ -35,6 +35,7 @@ cd kartera-api-doc/puml
 . venv/bin/activate
 cd kartera-api-doc
 mkdocs build
+mkdocs gh-deploy
 ```
 
 ### Generated live-reload server

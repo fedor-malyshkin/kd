@@ -1,3 +1,2 @@
 mkdocs
 neoteroi-mkdocs
-mkdocs-print-site-plugin
