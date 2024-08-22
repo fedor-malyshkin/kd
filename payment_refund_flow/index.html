@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Payment/Refund flow - Kartera API Documentation</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Payment/Refund flow";
+        var mkdocs_page_input_path = "payment_refund_flow.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Kartera API Documentation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../open-api/">Open API</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../general-concepts/">General concepts</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../basic-operation-flows/">Basic Operation Flows</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Kartera API Documentation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Payment/Refund flow</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="paymentrefund-flow">Payment/Refund flow</h1>
+<!-- TOC -->
+<ul>
+<li><a href="#paymentrefund-flow">Payment/Refund flow</a></li>
+<li><a href="#payment-cashbackdiscount">Payment (cashback/discount)</a></li>
+<li><a href="#payment-points-system">Payment (Points System)</a></li>
+<li><a href="#refund-cashbackdiscount">Refund (cashback/discount)</a></li>
+<li><a href="#refund-points-system">Refund (Points System)</a></li>
+</ul>
+<!-- TOC -->
+
+<h2 id="payment-cashbackdiscount">Payment (cashback/discount)</h2>
+<pre><code class="language-plantuml">
+@startuml
+
+state start  &lt;&lt;start&gt;&gt;
+state end    &lt;&lt;end&gt;&gt;
+
+
+start  --&gt; Calculate_Discount : discount is used in Rewards
+
+Calculate_Discount: use reward for the product 
+
+start  --&gt; Validate_Payment: cashback is used in Rewards
+Calculate_Discount --&gt; Validate_Payment
+Validate_Payment: - validate user
+Validate_Payment: - validate linked account
+Validate_Payment: - Amount for the final (discounted)\npayment is less than current balance for user
+Validate_Payment: - Amount is greater than\nour current set minimum amount (4.00)
+
+Validate_Payment --&gt; Save_Payment_Into_DB : Success
+Save_Payment_Into_DB : create a record into `payments`
+
+Save_Payment_Into_DB --&gt; Validate_Redeemed_Cashback : Success and `cashbackAmount` &lt;&gt; 0
+Validate_Redeemed_Cashback: check that there is enough cashback for user to redeem
+
+Validate_Redeemed_Cashback -&gt; Create_Redeem_Cashback: Success
+Create_Redeem_Cashback: create a record into `redeem_reward_cashbacks`
+
+Create_Redeem_Cashback --&gt; Calculate_Fee_Distribution: Success 
+Save_Payment_Into_DB --&gt; Calculate_Fee_Distribution: Success and `cashbackAmount` == 0 
+
+
+Calculate_Fee_Distribution --&gt; Save_Payment_Fees
+Save_Payment_Fees : create a record into `payment_fees`
+
+Save_Payment_Fees --&gt; Initiate_All_Dwolla_Payments : Success
+Initiate_All_Dwolla_Payments: call Dwolla API
+
+Initiate_All_Dwolla_Payments --&gt; Update_Dwolla_External_ID : Success
+
+Validate_Payment --&gt; end : Not Validated
+Save_Payment_Into_DB --&gt; end : Failure
+Validate_Redeemed_Cashback --&gt; end : Not Validated
+Create_Redeem_Cashback --&gt; end : Failure
+Save_Payment_Fees --&gt; end : Failure
+Initiate_All_Dwolla_Payments --&gt; end : Failure
+Update_Dwolla_External_ID --&gt; end
+
+
+state &quot;Process Dwolla Webhook\n(async process)&quot; as Process_Dwolla_Webhook {
+  state start2  &lt;&lt;start&gt;&gt;
+  state end2    &lt;&lt;end&gt;&gt;
+
+  start2 --&gt; Create_Cashback: if payment is Accepted \nand cashback is used in Rewards\nONLY if cashbackAmount == 0
+  Create_Cashback: create a record into `reward_cashbacks`
+
+  Create_Cashback --&gt; Update_Payment_Status
+
+  start2 --&gt; Cancel_Redeemed_Cashback: if payment is Rejected \nand cashback is used in Rewards
+  Cancel_Redeemed_Cashback --&gt; Update_Payment_Status
+
+  start2 --&gt; Update_Payment_Status : Any other cases
+
+  Update_Payment_Status --&gt;  Notify_Payment_Status_Subscribers
+  Notify_Payment_Status_Subscribers --&gt; end2
+
+}
+
+
+@enduml
+
+</code></pre>
+<h2 id="payment-points-system">Payment (Points System)</h2>
+<pre><code class="language-plantuml">
+@startuml
+
+state start  &lt;&lt;start&gt;&gt;
+state end    &lt;&lt;end&gt;&gt;
+
+start  --&gt; Validate_Payment: point is used in Rewards
+Validate_Payment: - validate user
+Validate_Payment: - validate linked account
+Validate_Payment: - there is enough story points if they are used
+Validate_Payment: - Amount for the final\npayment is less than current balance for user
+Validate_Payment: - Amount is greater than\nour current set minimum amount (4.00)
+
+Validate_Payment --&gt; Save_Payment_Into_DB : Success
+Save_Payment_Into_DB : create a record into `payments`
+
+Save_Payment_Into_DB --&gt; Validate_Redeemed_Reward_Points : Success and `pointsAmount` &lt;&gt; 0
+Validate_Redeemed_Reward_Points: check that there is enough reward points for user to redeem
+
+Validate_Redeemed_Reward_Points -&gt; Create_Redeemed_Reward_Points: Success
+Create_Redeemed_Reward_Points: create a record into `redeem_reward_points`
+
+Create_Redeemed_Reward_Points --&gt; Mark_Intro_Offer_as_Used : if conditions are matching\nand it wasn't used
+Save_Payment_Into_DB --&gt; Mark_Intro_Offer_as_Used: if conditions are matching\nand it wasn't used
+Mark_Intro_Offer_as_Used: set 'INTRO_OFFER_USED' in product_user table
+
+Create_Redeemed_Reward_Points --&gt; Calculate_Fee_Distribution: Success 
+Save_Payment_Into_DB --&gt; Calculate_Fee_Distribution: Success and `pointsAmount` == 0 
+Mark_Intro_Offer_as_Used--&gt; Calculate_Fee_Distribution: Success 
+
+Calculate_Fee_Distribution --&gt; Save_Payment_Fees
+Save_Payment_Fees : create a record into `payment_fees`
+
+Save_Payment_Fees --&gt; Initiate_All_Dwolla_Payments : Success
+Initiate_All_Dwolla_Payments: call Dwolla API
+
+Initiate_All_Dwolla_Payments --&gt; Update_Dwolla_External_ID : Success
+
+Validate_Payment --&gt; end : Not Validated
+Save_Payment_Into_DB --&gt; end : Failure
+Validate_Redeemed_Reward_Points --&gt; end : Not Validated
+Create_Redeemed_Reward_Points --&gt; end : Failure
+Save_Payment_Fees --&gt; end : Failure
+Initiate_All_Dwolla_Payments --&gt; end : Failure
+Update_Dwolla_External_ID --&gt; end
+
+
+state &quot;Process Dwolla Webhook\n(async process)&quot; as Process_Dwolla_Webhook {
+  state start2  &lt;&lt;start&gt;&gt;
+  state end2    &lt;&lt;end&gt;&gt;
+
+  start2 --&gt; Create_Reward_Points: if payment is Accepted\nONLY if pointsAmount == 0
+  Create_Reward_Points: create a record into `reward_points`
+  Create_Reward_Points: check an option with Intro-Offer
+  Create_Reward_Points --&gt; Update_Payment_Status
+
+
+  start2 --&gt; Cancel_Redeemed_Reward_Points: if payment is Rejected \nand points are used in Rewards
+  Cancel_Redeemed_Reward_Points --&gt; Update_Payment_Status
+
+  Cancel_Redeemed_Reward_Points --&gt; Undo_Mark_Intro_Offer_as_Used : if was set by this payment
+  Undo_Mark_Intro_Offer_as_Used --&gt;  Update_Payment_Status
+
+  start2 --&gt; Update_Payment_Status : Any other cases
+
+
+  Update_Payment_Status --&gt;  Notify_Payment_Status_Subscribers
+  Notify_Payment_Status_Subscribers --&gt; end2
+
+}
+
+
+@enduml
+
+</code></pre>
+<h2 id="refund-cashbackdiscount">Refund (cashback/discount)</h2>
+<pre><code class="language-plantuml">
+@startuml
+
+state start  &lt;&lt;start&gt;&gt;
+state end    &lt;&lt;end&gt;&gt;
+
+
+start  --&gt; Validate_Refund
+Validate_Refund: - validate user
+Validate_Refund: - validate linked account
+Validate_Refund: - Amount for refund is equal\nto amount for in-payment 
+Validate_Refund: - Payment is not already reverted
+Validate_Refund: - there should be no other reward for\n the specified original payment in req
+
+Validate_Refund --&gt; Save_Refund_Into_DB : Success
+Save_Refund_Into_DB : create a record into `payments`
+
+Save_Refund_Into_DB --&gt; Cancel_Redeemed_Cashback : if the original payment\nis specified in req
+Cancel_Redeemed_Cashback --&gt; Mark_Original_Payment_As_Reverted
+Mark_Original_Payment_As_Reverted --&gt; Mark_Cashback_As_Deactivated
+
+Mark_Cashback_As_Deactivated--&gt; Initiate_All_Dwolla_Refunds 
+Mark_Cashback_As_Deactivated:  record into `reward_cashbacks` set `ACTIVE` = false
+
+Save_Refund_Into_DB --&gt; Initiate_All_Dwolla_Refunds : Success
+
+Initiate_All_Dwolla_Refunds --&gt; Update_Dwolla_External_ID : Success
+Initiate_All_Dwolla_Refunds: call Dwolla API
+
+Update_Dwolla_External_ID --&gt; end 
+
+Validate_Refund --&gt; end : Not Validated
+Save_Refund_Into_DB --&gt; end : Failure
+Initiate_All_Dwolla_Refunds --&gt; end : Failure
+
+state &quot;Process Dwolla Webhook\n(async process)&quot; as Process_Dwolla_Webhook {
+  state start2  &lt;&lt;start&gt;&gt;
+  state end2    &lt;&lt;end&gt;&gt;
+
+  start2 --&gt; Undo_Cancel_Redeemed_Cashback: if payment is Rejected \nand the original payment was specified
+  Undo_Cancel_Redeemed_Cashback --&gt; Undo_Mark_Original_Payment_As_Reverted
+
+  Undo_Mark_Original_Payment_As_Reverted --&gt; Undo_Mark_Cashback_As_Deactivated
+
+  Undo_Mark_Cashback_As_Deactivated --&gt; Update_Payment_Status
+  Undo_Mark_Cashback_As_Deactivated : the cashback that has been\ncreated by original payment
+  Undo_Mark_Cashback_As_Deactivated :  record into `reward_cashbacks` set `ACTIVE` = true
+
+
+  start2 --&gt; Update_Payment_Status: Any other cases
+
+  Update_Payment_Status --&gt;  Notify_Payment_Status_Subscribers
+  Notify_Payment_Status_Subscribers --&gt; end2
+
+
+}
+
+
+@enduml
+
+</code></pre>
+<h2 id="refund-points-system">Refund (Points System)</h2>
+<pre><code class="language-plantuml">
+@startuml
+
+state start  &lt;&lt;start&gt;&gt;
+state end    &lt;&lt;end&gt;&gt;
+
+
+start  --&gt; Validate_Refund
+Validate_Refund: - validate user
+Validate_Refund: - validate linked account
+Validate_Refund: - Amount for refund is equal\nto amount for in-payment 
+Validate_Refund: - Payment is not already reverted
+Validate_Refund: - there should be no other reward for\n the specified original payment in req
+
+Validate_Refund --&gt; Save_Refund_Into_DB : Success
+Save_Refund_Into_DB : create a record into `payments`
+
+Save_Refund_Into_DB --&gt; Cancel_Redeemed_Reward_Points : if the original payment\nis specified in req
+Cancel_Redeemed_Reward_Points --&gt; Mark_Original_Payment_As_Reverted
+Mark_Original_Payment_As_Reverted --&gt; Mark_Reward_Points_As_Deactivated
+
+Mark_Reward_Points_As_Deactivated --&gt; Initiate_All_Dwolla_Refunds 
+Mark_Reward_Points_As_Deactivated:  record into `reward_points` set `ACTIVE` = false
+
+Save_Refund_Into_DB --&gt; Initiate_All_Dwolla_Refunds : Success
+
+Initiate_All_Dwolla_Refunds --&gt; Update_Dwolla_External_ID : Success
+Initiate_All_Dwolla_Refunds: call Dwolla API
+
+Update_Dwolla_External_ID --&gt; end 
+
+Validate_Refund --&gt; end : Not Validated
+Save_Refund_Into_DB --&gt; end : Failure
+Initiate_All_Dwolla_Refunds --&gt; end : Failure
+
+state &quot;Process Dwolla Webhook\n(async process)&quot; as Process_Dwolla_Webhook {
+  state start2  &lt;&lt;start&gt;&gt;
+  state end2    &lt;&lt;end&gt;&gt;
+
+  start2 --&gt; Undo_Cancel_Redeemed_Reward_Points: if payment is Rejected \nand the original payment was specified
+  Undo_Cancel_Redeemed_Reward_Points --&gt; Undo_Mark_Original_Payment_As_Reverted
+
+  Undo_Mark_Original_Payment_As_Reverted --&gt; Undo_Mark_Reward_Points_As_Deactivated
+
+  Undo_Mark_Reward_Points_As_Deactivated --&gt; Update_Payment_Status
+  Undo_Mark_Reward_Points_As_Deactivated : the reward points that have been\ncreated by original payment
+  Undo_Mark_Reward_Points_As_Deactivated :  record into `reward_points` set `ACTIVE` = true
+
+
+  start2 --&gt; Update_Payment_Status: Any other cases
+
+  Update_Payment_Status --&gt;  Notify_Payment_Status_Subscribers
+  Notify_Payment_Status_Subscribers --&gt; end2
+
+
+}
+
+
+@enduml
+
+</code></pre>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

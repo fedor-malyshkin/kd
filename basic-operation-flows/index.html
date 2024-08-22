@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Basic Operation Flows - Kartera API Documentation</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Basic Operation Flows";
+        var mkdocs_page_input_path = "basic-operation-flows.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Kartera API Documentation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../open-api/">Open API</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../general-concepts/">General concepts</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Basic Operation Flows</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#linked-account-operations">Linked Account operations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#payment-operations">Payment operations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#recurring-payment-operations">Recurring payment operations</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Kartera API Documentation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Basic Operation Flows</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h2 id="basic-operation-flows">Basic Operation Flows</h2>
+<p>Kartera API provides many operations available for automation by <code>partner</code>'s services with the help of the REST endpoints.
+Some of them are fully available through API, some require steps executed in UI.
+Each section describes an operation, its place in general flow and required steps (<code>API</code> or <code>UI</code> after a step will indicate the way it could be done).</p>
+<h3 id="linked-account-operations">Linked Account operations</h3>
+<p><code>linked account</code> should be created for each account or bank user have for performing <code>pay-by-bank</code> payments.
+Kartera provides this service with the help of 3rd party service (<a href="https://plaid.com">Plaid</a>), so some minimalistic communication with it is needed.
+The flow is:</p>
+<ol>
+<li>Create a product user (<code>UI</code>/<code>API</code>)</li>
+<li>Request plaid link token (<a href="../open-api/#get-v1usersidrequest_plaid_link_token">API</a>) </li>
+<li>In partner <code>partner</code>'s services UI provide access to the user to <a href="https://plaid.com/docs/link">Plaid's Link React component</a> and initiate it by the token from the previous step</li>
+<li>Resulting <code>access_token</code> use the <a href="../open-api/#post-v1linked_accounts">API endpoint</a> for creating <code>linked account</code> </li>
+</ol>
+<h3 id="payment-operations">Payment operations</h3>
+<p>Payments are the most used operations of Kartera API. They use the information about <code>product-user</code>'s bank/account 
+they connected with the help of <code>linked-account</code>.</p>
+<p>The flow is:</p>
+<ol>
+<li>Create a product user (<code>UI</code>/<code>API</code>)</li>
+<li>Request plaid link token (<a href="../open-api/#get-v1usersidrequest_plaid_link_token">API</a>)</li>
+<li>In partner <code>partner</code>'s services UI provide access to the user to <a href="https://plaid.com/docs/link">Plaid's Link React component</a> and initiate it by the token from the previous step</li>
+<li>Resulting <code>access_token</code> use the <a href="../open-api/#post-v1linked_accounts">API endpoint</a> for creating <code>linked account</code></li>
+<li>Call payments <a href="../open-api/#post-v1payments">API endpoint</a>, providing <code>linked accound</code>'s ID<ol>
+<li>payment will perform balance verification</li>
+<li>initiate payment/refund</li>
+<li>update rewards information</li>
+<li>call a webhook on completion (failed/successful) </li>
+</ol>
+</li>
+</ol>
+<h3 id="recurring-payment-operations">Recurring payment operations</h3>
+<p>Recurring payment operations are <code>payment</code> operations executed on a specified interval.</p>
+<p>The flow is:</p>
+<ol>
+<li>Create a product user (<code>UI</code>/<code>API</code>)</li>
+<li>Request plaid link token (<a href="../open-api/#get-v1usersidrequest_plaid_link_token">API</a>)</li>
+<li>In partner <code>partner</code>'s services UI provide access to the user to <a href="https://plaid.com/docs/link">Plaid's Link React component</a> and initiate it by the token from the previous step</li>
+<li>Resulting <code>access_token</code> use the <a href="../open-api/#post-v1linked_accounts">API endpoint</a> for creating <code>linked account</code></li>
+<li>Create a recurring payment <a href="../open-api/#post-v1recurring_payments">API endpoint</a>, providing <code>linked accound</code>'s ID</li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../architecture/" class="btn btn-neutral float-left" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../architecture/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
